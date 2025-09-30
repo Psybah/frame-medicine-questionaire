@@ -36,7 +36,7 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
     infection: false,
   });
   // Step 3 state
-  const [service, setService] = useState("");
+  const [service, setService] = useState<string[]>([]);
   // Step 4 state
   const [labLocation, setLabLocation] = useState("");
   const [consent, setConsent] = useState(false);
@@ -86,33 +86,90 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
   const next = () => setCurrent((c) => Math.min(c + 1, items.length - 1));
   const prev = () => setCurrent((c) => Math.max(c - 1, 0));
 
+  // Validation
+  const [triedNext, setTriedNext] = useState(false);
+  const currentId = items[current]?.id;
+  const isValid = (() => {
+    switch (currentId) {
+      case -1:
+        return true; // intro
+      case 0:
+        return firstName.trim().length > 0 && lastName.trim().length > 0;
+      case 1:
+        return dob.trim().length > 0 && ["WA","FL","GA","NE"].includes(state);
+      case 2:
+        return email.trim().length > 0 && phone.trim().length > 0;
+      case 3:
+        return heightCm.trim().length > 0 && weightKg.trim().length > 0;
+      case 4:
+        return ["low","moderate","high"].includes(energy);
+      case 5:
+        return concerns.length > 0; // pick at least one
+      case 6:
+        return true; // info only
+      case 7:
+        return service.length > 0; // pick at least one
+      case 8:
+        return labLocation.trim().length > 0 && consent;
+      default:
+        return true;
+    }
+  })();
+
+  const handleNext = () => {
+    if (!isValid) {
+      setTriedNext(true);
+      return;
+    }
+    setTriedNext(false);
+    next();
+  };
+
   useEffect(() => {
     onProgress?.(current, items.length);
     // only when current or total changes; onProgress is stable from parent via useCallback
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, items.length]);
 
+  const isFirst = current === 0;
+  const isLast = current === items.length - 1;
+
   return (
     <div className="h-[40rem] flex flex-col items-center justify-center w-full gap-6">
       <CardStack items={items} manual current={current} maxVisible={4} />
       <div className="flex items-center gap-6 mt-10">
-        <button
-          type="button"
-          onClick={prev}
-          className="px-5 py-2.5 rounded-xl border bg-background hover:bg-muted text-foreground"
-          disabled={current === 0}
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={next}
-          className="px-5 py-2.5 rounded-xl bg-brand text-white hover:opacity-90"
-          disabled={current === items.length - 1}
-        >
-          Next
-        </button>
+        {!isFirst && !isLast && (
+          <button
+            type="button"
+            onClick={prev}
+            className="px-5 py-2.5 rounded-xl border bg-background hover:bg-muted text-foreground"
+          >
+            Back
+          </button>
+        )}
+        {!isLast ? (
+          <button
+            type="button"
+            onClick={handleNext}
+            className={`px-5 py-2.5 rounded-xl text-white hover:opacity-90 ${isValid ? 'bg-brand' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
+          >
+            {isFirst ? "Start" : "Next"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {/* submit wiring here soon */}}
+            className="px-5 py-2.5 rounded-xl bg-brand text-white hover:opacity-90"
+          >
+            Submit
+          </button>
+        )}
       </div>
+      {!isValid && triedNext && (
+        <p className="text-xs text-destructive mt-2">
+          Please complete the required fields before continuing.
+        </p>
+      )}
     </div>
   );
 }
@@ -146,8 +203,9 @@ function getStepZeroCards() {
       designation: "",
       content: (
         <div className="flex items-center justify-center h-full min-h-60 text-center">
-          <div className="space-y-2">
-            <h2 className="text-xl font-semibold">Start your FRAME assessment</h2>
+          <div className="space-y-3">
+            <img src="/frame.png" alt="FRAME" className="h-10 mx-auto" />
+            <h2 className="text-xl font-semibold">Start your assessment</h2>
             <p className="text-sm text-muted-foreground">
               Quick 6-step check to see if you're a candidate. Takes ~3 minutes.
             </p>
@@ -313,23 +371,23 @@ function getStepTwoCards({
       content: (
         <div className="grid grid-cols-1 gap-3">
           <div className="space-y-1">
-            <Label htmlFor="height">Height (cm)</Label>
+            <Label htmlFor="height">Height (inches)</Label>
             <Input
               id="height"
               inputMode="numeric"
               value={heightCm}
               onChange={(e) => setHeightCm(e.target.value)}
-              placeholder="e.g., 180"
+              placeholder="e.g., 71"
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="weight">Weight (kg)</Label>
+            <Label htmlFor="weight">Weight (lbs)</Label>
             <Input
               id="weight"
               inputMode="numeric"
               value={weightKg}
               onChange={(e) => setWeightKg(e.target.value)}
-              placeholder="e.g., 80"
+              placeholder="e.g., 185"
             />
           </div>
         </div>
@@ -424,35 +482,38 @@ function getStepThreeCards({
   service,
   setService,
 }: {
-  service: string;
-  setService: (v: string) => void;
+  service: string[];
+  setService: (v: string[]) => void;
 }) {
   return [
     {
       id: 7,
       name: "Step 3: Service Alignment",
-      designation: "Choose service",
+      designation: "Choose services",
       content: (
         <div className="space-y-2">
           <Label>What are you most interested in today?</Label>
-          <RadioGroup value={service} onValueChange={setService} className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="trt" id="svc-trt" />
-              <Label htmlFor="svc-trt">Testosterone therapy</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="ed" id="svc-ed" />
-              <Label htmlFor="svc-ed">Erectile function solutions</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="hair" id="svc-hair" />
-              <Label htmlFor="svc-hair">Hair treatment</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="coaching" id="svc-coach" />
-              <Label htmlFor="svc-coach">Coaching (fitness/nutrition/lifestyle)</Label>
-            </div>
-          </RadioGroup>
+          <div className="grid grid-cols-1 gap-2">
+            {[
+              ["trt", "Testosterone therapy"],
+              ["ed", "Erectile function solutions"],
+              ["hair", "Hair treatment"],
+              ["coaching", "Coaching (fitness/nutrition/lifestyle)"],
+            ].map(([key, label]) => (
+              <div key={key} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`svc-${key}`}
+                  checked={service.includes(key)}
+                  onCheckedChange={(v) =>
+                    setService(
+                      v ? [...service, key] : service.filter((s) => s !== key)
+                    )
+                  }
+                />
+                <Label htmlFor={`svc-${key}`}>{label}</Label>
+              </div>
+            ))}
+          </div>
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
             TRT path triggers lab order; Coaching path goes to intake scheduling.
           </p>
