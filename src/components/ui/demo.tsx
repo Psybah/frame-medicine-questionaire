@@ -41,7 +41,7 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
   const [labLocation, setLabLocation] = useState("");
   const [consent, setConsent] = useState(false);
 
-  const items = getStepOneCards({
+  const items = getStepZeroCards().concat(getStepOneCards({
     firstName,
     lastName,
     dob,
@@ -54,7 +54,7 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
     setState,
     setEmail,
     setPhone,
-  }).concat(
+  })).concat(
     getStepTwoCards({
       heightCm,
       weightKg,
@@ -136,6 +136,27 @@ export const Highlight = ({
     </span>
   );
 };
+
+// Step 0: Entry
+function getStepZeroCards() {
+  return [
+    {
+      id: -1,
+      name: "",
+      designation: "",
+      content: (
+        <div className="flex items-center justify-center h-full min-h-60 text-center">
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold">Start your FRAME assessment</h2>
+            <p className="text-sm text-muted-foreground">
+              Quick 6-step check to see if you're a candidate. Takes ~3 minutes.
+            </p>
+          </div>
+        </div>
+      ),
+    },
+  ];
+}
 
 function getStepOneCards({
   firstName,
@@ -483,49 +504,23 @@ function getStepFourCards({
         </div>
       ),
     },
-    {
-      id: 9,
-      name: "Step 4: Labs & Payment",
-      designation: "What happens next",
-      content: (
-        <div className="space-y-2 text-sm text-neutral-700 dark:text-neutral-200">
-          <p className="font-medium">Right after checkout:</p>
-          <ul className="list-disc list-inside space-y-1">
-            <li>Instant confirmation with clear instructions</li>
-            <li>Nearest lab locations and scheduling</li>
-            <li>Simple prep checklist for accurate results</li>
-          </ul>
-        </div>
-      ),
-    },
   ];
 }
 
 function getStepFiveCards() {
   return [
     {
-      id: 10,
+      id: 9,
       name: "Step 5: Confirmation",
-      designation: "Your checklist",
+      designation: "What happens next",
       content: (
         <div className="space-y-2 text-sm text-neutral-700 dark:text-neutral-200">
           <ul className="list-disc list-inside space-y-1">
             <li>Download or email your lab order</li>
             <li>Complete your labs within 7 days</li>
-          </ul>
-        </div>
-      ),
-    },
-    {
-      id: 11,
-      name: "Step 5: Confirmation",
-      designation: "We’ll be in touch",
-      content: (
-        <div className="space-y-2 text-sm text-neutral-700 dark:text-neutral-200">
-          <ul className="list-disc list-inside space-y-1">
             <li>A FRAME physician reviews your results</li>
             <li>Personalized recommendations within 3–5 business days</li>
-            <li>Need help? Use click‑to‑call or reply to our support email</li>
+            <li>Questions? Use click‑to‑call or reply to our support email</li>
           </ul>
         </div>
       ),

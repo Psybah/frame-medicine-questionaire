@@ -16,6 +16,11 @@ const Index = () => {
         </div>
         <div className="mt-6 p-6 rounded-lg border bg-card">
           <CardStackDemo onProgress={handleProgress} />
+          <div className="mt-6 text-xs text-muted-foreground flex flex-col items-center gap-3">
+            <div className="flex items-center gap-2">
+              <img src="/HIPPA.png" alt="HIPAA Compliant" className="h-10" />
+            </div>
+          </div>
         </div>
       </div>
     </div>

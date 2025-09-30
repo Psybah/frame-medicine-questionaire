@@ -59,12 +59,12 @@ export const CardStack = ({
   const stack = (manual ? rotated : cards).slice(0, Math.max(1, Math.min(maxVisible, items.length)));
 
   return (
-    <div className="relative h-72 w-80 md:h-72 md:w-96">
+    <div className="relative min-h-72 w-[20rem] md:min-h-72 md:w-[30rem]">
       {stack.map((card, index) => {
         return (
           <motion.div
             key={card.id}
-            className="absolute dark:bg-black bg-white h-72 w-80 md:h-72 md:w-96 rounded-[28px] p-5 shadow-xl border border-neutral-200 dark:border-white/[0.1]  shadow-black/[0.1] dark:shadow-white/[0.05] flex flex-col justify-between"
+            className="absolute dark:bg-black bg-white min-h-72 w-[20rem] md:min-h-72 md:w-[30rem] rounded-[28px] p-5 shadow-xl border border-neutral-200 dark:border-white/[0.1]  shadow-black/[0.1] dark:shadow-white/[0.05] flex flex-col justify-between"
             style={{
               transformOrigin: "top center",
             }}
