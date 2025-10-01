@@ -37,9 +37,9 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
   });
   // Step 3 state
   const [service, setService] = useState<string[]>([]);
-  // Step 4 state
-  const [labLocation, setLabLocation] = useState("");
-  const [consent, setConsent] = useState(false);
+  // Step 4 state (Intake scheduling)
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [contactMethod, setContactMethod] = useState("");
 
   const items = getStepZeroCards().concat(getStepOneCards({
     firstName,
@@ -74,10 +74,10 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
     })
   ).concat(
     getStepFourCards({
-      labLocation,
-      setLabLocation,
-      consent,
-      setConsent,
+      scheduleDate,
+      setScheduleDate,
+      contactMethod,
+      setContactMethod,
     })
   ).concat(
     getStepFiveCards()
@@ -96,7 +96,7 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
       case 0:
         return firstName.trim().length > 0 && lastName.trim().length > 0;
       case 1:
-        return dob.trim().length > 0 && ["WA","FL","GA","NE"].includes(state);
+        return dob.trim().length > 0 && ["WA","FL","GA","NE","NC"].includes(state);
       case 2:
         return email.trim().length > 0 && phone.trim().length > 0;
       case 3:
@@ -106,11 +106,11 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
       case 5:
         return concerns.length > 0; // pick at least one
       case 6:
-        return true; // info only
+        return Object.values(history).some(Boolean); // pick at least one
       case 7:
         return service.length > 0; // pick at least one
       case 8:
-        return labLocation.trim().length > 0 && consent;
+        return scheduleDate.trim().length > 0 && ["phone","email"].includes(contactMethod);
       default:
         return true;
     }
@@ -133,12 +133,57 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
 
   const isFirst = current === 0;
   const isLast = current === items.length - 1;
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const historySelected = Object.entries(history)
+        .filter(([, v]) => Boolean(v))
+        .map(([k]) => k);
+
+      const payload = {
+        firstName,
+        lastName,
+        dob,
+        state,
+        email,
+        phone,
+        heightInches: heightCm,
+        weightLbs: weightKg,
+        energy,
+        concerns,
+        history: historySelected,
+        services: service,
+        scheduleDate,
+        contactMethod,
+      };
+      const target = import.meta.env.DEV ? "/api/sheets" : import.meta.env.VITE_GOOGLE_SCRIPT_URL;
+      const res = await fetch(target, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`Bad status: ${res.status}`);
+      // Optionally show a simple success indicator
+      setSubmitted(true);
+    } catch (e) {
+      console.error(e);
+      setSubmitError(true);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
 
   return (
     <div className="h-[40rem] flex flex-col items-center justify-center w-full gap-6">
       <CardStack items={items} manual current={current} maxVisible={4} />
       <div className="flex items-center gap-6 mt-10">
-        {!isFirst && !isLast && (
+        {!isFirst && (
           <button
             type="button"
             onClick={prev}
@@ -158,10 +203,11 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
         ) : (
           <button
             type="button"
-            onClick={() => {/* submit wiring here soon */}}
-            className="px-5 py-2.5 rounded-xl bg-brand text-white hover:opacity-90"
+            onClick={handleSubmit}
+            disabled={submitting}
+            className={`px-5 py-2.5 rounded-xl text-white hover:opacity-90 ${submitting ? 'bg-muted cursor-not-allowed' : 'bg-brand'}`}
           >
-            Submit
+            {submitting ? 'Submitting…' : 'Submit'}
           </button>
         )}
       </div>
@@ -169,6 +215,12 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
         <p className="text-xs text-destructive mt-2">
           Please complete the required fields before continuing.
         </p>
+      )}
+      {submitted && (
+        <p className="text-xs text-green-600 mt-2">Submitted successfully.</p>
+      )}
+      {submitError && (
+        <p className="text-xs text-destructive mt-2">Submission failed. Please try again.</p>
       )}
     </div>
   );
@@ -290,13 +342,14 @@ function getStepOneCards({
             <Label>State of residence</Label>
             <Select value={state} onValueChange={(v) => setState(v)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select state (WA, FL, GA, NE)" />
+                <SelectValue placeholder="Select state (WA, FL, GA, NE, NC)" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="WA">Washington</SelectItem>
                 <SelectItem value="FL">Florida</SelectItem>
                 <SelectItem value="GA">Georgia</SelectItem>
                 <SelectItem value="NE">Nebraska</SelectItem>
+                <SelectItem value="NC">North Carolina</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -514,9 +567,6 @@ function getStepThreeCards({
               </div>
             ))}
           </div>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            TRT path triggers lab order; Coaching path goes to intake scheduling.
-          </p>
         </div>
       ),
     },
@@ -524,44 +574,47 @@ function getStepThreeCards({
 }
 
 function getStepFourCards({
-  labLocation,
-  setLabLocation,
-  consent,
-  setConsent,
+  scheduleDate,
+  setScheduleDate,
+  contactMethod,
+  setContactMethod,
 }: {
-  labLocation: string;
-  setLabLocation: (v: string) => void;
-  consent: boolean;
-  setConsent: (v: boolean) => void;
+  scheduleDate: string;
+  setScheduleDate: (v: string) => void;
+  contactMethod: string;
+  setContactMethod: (v: string) => void;
 }) {
   return [
     {
       id: 8,
-      name: "Step 4: Labs & Payment",
-      designation: "$100, all-in",
+      name: "Step 4: Intake Scheduling",
+      designation: "Pick a date",
       content: (
         <div className="space-y-3">
-          <p className="text-sm text-neutral-700 dark:text-neutral-200">
-            One transparent charge of <span className="font-semibold">$100</span> covers your full lab panel and a
-            FRAME physician review. If you’re a candidate, you’ll continue to your plan. If not, you’ll receive a
-            personal note with next steps—no upsell.
-          </p>
           <div className="space-y-1">
-            <Label>Preferred lab location</Label>
+            <Label htmlFor="schedule">Choose a date</Label>
             <Input
-              placeholder="City or ZIP (for nearest lab)"
-              value={labLocation}
-              onChange={(e) => setLabLocation(e.target.value)}
+              id="schedule"
+              type="date"
+              value={scheduleDate}
+              onChange={(e) => setScheduleDate(e.target.value)}
             />
           </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="consent"
-              checked={consent}
-              onCheckedChange={(v) => setConsent(Boolean(v))}
-            />
-            <Label htmlFor="consent">I agree to be charged $100 for labs & review</Label>
+          <div className="space-y-1">
+            <Label>Preferred contact method</Label>
+            <Select value={contactMethod} onValueChange={setContactMethod}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select: phone or email" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="phone">Phone</SelectItem>
+                <SelectItem value="email">Email</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            We’ll reach out to confirm your intake time and next steps.
+          </p>
         </div>
       ),
     },
