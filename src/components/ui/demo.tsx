@@ -96,7 +96,7 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
       case 0:
         return firstName.trim().length > 0 && lastName.trim().length > 0;
       case 1:
-        return dob.trim().length > 0 && ["WA","FL","GA","NE","NC"].includes(state);
+        return dob.trim().length > 0 && ["Washington","Florida","Georgia","Nebraska","North Carolina"].includes(state);
       case 2:
         return email.trim().length > 0 && phone.trim().length > 0;
       case 3:
@@ -134,14 +134,50 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
   const isFirst = current === 0;
   const isLast = current === items.length - 1;
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
+
+  const resetAll = () => {
+    setFirstName("");
+    setLastName("");
+    setDob("");
+    setState("");
+    setEmail("");
+    setPhone("");
+    setHeightCm("");
+    setWeightKg("");
+    setEnergy("moderate");
+    setConcerns([]);
+    setHistory({ heartDisease: false, diabetes: false, cancer: false, infection: false });
+    setService([]);
+    setScheduleDate("");
+    setContactMethod("");
+    setCurrent(0);
+    setSubmitted(false);
+    setSubmitError(false);
+  };
 
   const handleSubmit = async () => {
     if (submitting) return;
     setSubmitting(true);
     try {
-      const historySelected = Object.entries(history)
+      const HISTORY_LABELS: Record<string, string> = {
+        heartDisease: "Heart disease",
+        diabetes: "Uncontrolled diabetes",
+        cancer: "Cancer",
+        infection: "Active infection",
+      };
+      const SERVICE_LABELS: Record<string, string> = {
+        trt: "Testosterone therapy",
+        ed: "Erectile function solutions",
+        hair: "Hair treatment",
+        coaching: "Coaching (fitness/nutrition/lifestyle)",
+      };
+
+      const historySelectedLabels = Object.entries(history)
         .filter(([, v]) => Boolean(v))
-        .map(([k]) => k);
+        .map(([k]) => HISTORY_LABELS[k] || k);
+      const servicesLabels = service.map((k) => SERVICE_LABELS[k] || k);
 
       const payload = {
         firstName,
@@ -154,8 +190,8 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
         weightLbs: weightKg,
         energy,
         concerns,
-        history: historySelected,
-        services: service,
+        history: historySelectedLabels.join(", "),
+        services: servicesLabels.join(", "),
         scheduleDate,
         contactMethod,
       };
@@ -166,7 +202,6 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(`Bad status: ${res.status}`);
-      // Optionally show a simple success indicator
       setSubmitted(true);
     } catch (e) {
       console.error(e);
@@ -176,8 +211,45 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
     }
   };
 
-  const [submitted, setSubmitted] = useState(false);
-  const [submitError, setSubmitError] = useState(false);
+  if (submitted) {
+    const successItems = [
+      {
+        id: 999,
+        name: "",
+        designation: "",
+        content: (
+          <div className="flex items-center justify-center h-full min-h-60 text-center">
+            <div className="space-y-3">
+              <svg className="h-16 w-16 mx-auto text-brand-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6L9 17l-5-5">
+                  <animate attributeName="stroke-dasharray" from="0,40" to="40,0" dur="0.6s" fill="freeze" />
+                </path>
+              </svg>
+              <h2 className="text-xl font-semibold">Submission received</h2>
+              <p className="text-sm text-muted-foreground">We’ll follow up shortly with next steps.</p>
+            </div>
+          </div>
+        ),
+      },
+    ];
+    return (
+      <div className="h-[40rem] flex flex-col items-center justify-center w-full gap-6">
+        <CardStack items={successItems} manual current={0} maxVisible={1} />
+        <div className="flex items-center gap-6 mt-10">
+          <button
+            type="button"
+            onClick={resetAll}
+            className="px-5 py-2.5 rounded-xl bg-brand text-white hover:opacity-90"
+          >
+            Retake Quiz
+          </button>
+        </div>
+        {submitError && (
+          <p className="text-xs text-destructive mt-2">Submission failed. Check your network & try again.</p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="h-[40rem] flex flex-col items-center justify-center w-full gap-6">
@@ -216,11 +288,8 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
           Please complete the required fields before continuing.
         </p>
       )}
-      {submitted && (
-        <p className="text-xs text-green-600 mt-2">Submitted successfully.</p>
-      )}
       {submitError && (
-        <p className="text-xs text-destructive mt-2">Submission failed. Please try again.</p>
+        <p className="text-xs text-destructive mt-2">Submission failed. Check your network connection & try again.</p>
       )}
     </div>
   );
@@ -342,14 +411,14 @@ function getStepOneCards({
             <Label>State of residence</Label>
             <Select value={state} onValueChange={(v) => setState(v)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select state (WA, FL, GA, NE, NC)" />
+                <SelectValue placeholder="Select state" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="WA">Washington</SelectItem>
-                <SelectItem value="FL">Florida</SelectItem>
-                <SelectItem value="GA">Georgia</SelectItem>
-                <SelectItem value="NE">Nebraska</SelectItem>
-                <SelectItem value="NC">North Carolina</SelectItem>
+                <SelectItem value="Washington">Washington</SelectItem>
+                <SelectItem value="Florida">Florida</SelectItem>
+                <SelectItem value="Georgia">Georgia</SelectItem>
+                <SelectItem value="Nebraska">Nebraska</SelectItem>
+                <SelectItem value="North Carolina">North Carolina</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -630,11 +699,9 @@ function getStepFiveCards() {
       content: (
         <div className="space-y-2 text-sm text-neutral-700 dark:text-neutral-200">
           <ul className="list-disc list-inside space-y-1">
-            <li>Download or email your lab order</li>
-            <li>Complete your labs within 7 days</li>
             <li>A FRAME physician reviews your results</li>
             <li>Personalized recommendations within 3–5 business days</li>
-            <li>Questions? Use click‑to‑call or reply to our support email</li>
+            <li>Questions? Reply to our support email</li>
           </ul>
         </div>
       ),
