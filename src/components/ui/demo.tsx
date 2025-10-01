@@ -195,8 +195,8 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
         scheduleDate,
         contactMethod,
       };
-      const target = import.meta.env.DEV ? "/api/sheets" : import.meta.env.VITE_GOOGLE_SCRIPT_URL;
-      const res = await fetch(target, {
+      // Always hit same-origin serverless proxy to avoid browser CORS in prod
+      const res = await fetch("/api/sheets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
