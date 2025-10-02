@@ -38,7 +38,7 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
   // Step 3 state
   const [service, setService] = useState<string[]>([]);
   // Step 4 state (Intake scheduling)
-  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleDate, setScheduleDate] = useState(""); // repurposed as best time to contact
   const [contactMethod, setContactMethod] = useState("");
 
   const items = getStepZeroCards().concat(getStepOneCards({
@@ -79,8 +79,6 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
       contactMethod,
       setContactMethod,
     })
-  ).concat(
-    getStepFiveCards()
   );
 
   const next = () => setCurrent((c) => Math.min(c + 1, items.length - 1));
@@ -110,7 +108,7 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
       case 7:
         return service.length > 0; // pick at least one
       case 8:
-        return scheduleDate.trim().length > 0 && ["phone","email"].includes(contactMethod);
+        return ["morning","afternoon","evening"].includes(scheduleDate) && ["call","text","email"].includes(contactMethod);
       default:
         return true;
     }
@@ -225,8 +223,8 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
                   <animate attributeName="stroke-dasharray" from="0,40" to="40,0" dur="0.6s" fill="freeze" />
                 </path>
               </svg>
-              <h2 className="text-xl font-semibold">Submission received</h2>
-              <p className="text-sm text-muted-foreground">We’ll follow up shortly with next steps.</p>
+              <h2 className="text-xl font-semibold">Thank you for choosing FRAME Medicine.</h2>
+              <p className="text-sm text-muted-foreground">We'll reach out soon!</p>
             </div>
           </div>
         ),
@@ -656,33 +654,38 @@ function getStepFourCards({
   return [
     {
       id: 8,
-      name: "Step 4: Intake Scheduling",
-      designation: "Pick a date",
+      name: "Step 4: Get Started",
+      designation: "",
       content: (
         <div className="space-y-3">
           <div className="space-y-1">
-            <Label htmlFor="schedule">Choose a date</Label>
-            <Input
-              id="schedule"
-              type="date"
-              value={scheduleDate}
-              onChange={(e) => setScheduleDate(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label>Preferred contact method</Label>
-            <Select value={contactMethod} onValueChange={setContactMethod}>
+            <Label>Best time to contact</Label>
+            <Select value={scheduleDate} onValueChange={setScheduleDate}>
               <SelectTrigger>
-                <SelectValue placeholder="Select: phone or email" />
+                <SelectValue placeholder="Select: Morning, Afternoon, Evening" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="phone">Phone</SelectItem>
+                <SelectItem value="morning">Morning</SelectItem>
+                <SelectItem value="afternoon">Afternoon</SelectItem>
+                <SelectItem value="evening">Evening</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Preferred contact</Label>
+            <Select value={contactMethod} onValueChange={setContactMethod}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select: Call, Text, Email" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="call">Call</SelectItem>
+                <SelectItem value="text">Text</SelectItem>
                 <SelectItem value="email">Email</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            We’ll reach out to confirm your intake time and next steps.
+            We’ll reach out to confirm your intake and next steps.
           </p>
         </div>
       ),
@@ -690,23 +693,4 @@ function getStepFourCards({
   ];
 }
 
-function getStepFiveCards() {
-  return [
-    {
-      id: 9,
-      name: "Step 5: Confirmation",
-      designation: "What happens next",
-      content: (
-        <div className="space-y-2 text-sm text-neutral-700 dark:text-neutral-200">
-          <ul className="list-disc list-inside space-y-1">
-            <li>A FRAME physician reviews your results</li>
-            <li>Personalized recommendations within 3–5 business days</li>
-            <li>Questions? Reply to our support email</li>
-          </ul>
-        </div>
-      ),
-    },
-  ];
-}
-
-
+// Step 5 removed per latest requirements
