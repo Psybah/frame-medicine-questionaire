@@ -233,15 +233,6 @@ export function CardStackDemo({ onProgress }: { onProgress?: (current: number, t
     return (
       <div className="h-[40rem] flex flex-col items-center justify-center w-full gap-6">
         <CardStack items={successItems} manual current={0} maxVisible={1} />
-        <div className="flex items-center gap-6 mt-10">
-          <button
-            type="button"
-            onClick={resetAll}
-            className="px-5 py-2.5 rounded-xl bg-brand text-white hover:opacity-90"
-          >
-            Retake Quiz
-          </button>
-        </div>
         {submitError && (
           <p className="text-xs text-destructive mt-2">Submission failed. Check your network & try again.</p>
         )}
